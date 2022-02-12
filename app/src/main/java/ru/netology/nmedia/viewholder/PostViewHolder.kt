@@ -1,5 +1,6 @@
 package ru.netology.nmedia.viewholder
 
+import android.view.View
 import android.widget.PopupMenu
 import androidx.recyclerview.widget.RecyclerView
 import ru.netology.nmedia.BuildConfig
@@ -7,6 +8,7 @@ import ru.netology.nmedia.R
 import ru.netology.nmedia.databinding.CardPostBinding
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.listeners.OnInteractionListener
+import ru.netology.nmedia.view.load
 import ru.netology.nmedia.view.loadCircleCrop
 
 class PostViewHolder(
@@ -19,9 +21,29 @@ class PostViewHolder(
             author.text = post.author
             published.text = post.published
             content.text = post.content
-            avatar.loadCircleCrop("${BuildConfig.BASE_URL}/avatars/${post.authorAvatar}")
+            val avatarUrl = "${BuildConfig.BASE_URL}/avatars/${post.authorAvatar}"
+            avatar.loadCircleCrop(
+                avatarUrl,
+                R.drawable.ic_avatar_placeholder,
+                R.drawable.ic_avatar_not_found
+            )
             like.isChecked = post.likedByMe
             like.text = "${post.likes}"
+
+            with(post.attachment) {
+                if (this != null) {
+                    attachment.apply {
+                        visibility = View.VISIBLE
+                        contentDescription = description
+                        val imageUrl = "${BuildConfig.BASE_URL}/images/$url"
+                        load(
+                            imageUrl,
+                            R.drawable.ic_attachment_placeholder,
+                            R.drawable.ic_attachment_not_found
+                        )
+                    }
+                } else attachment.visibility = View.GONE
+            }
 
             menu.setOnClickListener {
                 PopupMenu(it.context, it).apply {

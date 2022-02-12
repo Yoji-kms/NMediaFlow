@@ -99,11 +99,21 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         edited.value = edited.value?.copy(content = text)
     }
 
-    fun likeById(id: Long) {
-        TODO()
+    fun likeById(id: Long) = viewModelScope.launch {
+        try {
+            _dataState.value = FeedModelState()
+            repository.likeById(id)
+        } catch (e: Exception) {
+            _dataState.value = FeedModelState(error = true)
+        }
     }
 
-    fun removeById(id: Long) {
-        TODO()
+    fun removeById(id: Long) = viewModelScope.launch {
+        try {
+            _dataState.value = FeedModelState()
+            repository.removeById(id)
+        } catch (e: Exception) {
+            _dataState.value = FeedModelState(error = true)
+        }
     }
 }

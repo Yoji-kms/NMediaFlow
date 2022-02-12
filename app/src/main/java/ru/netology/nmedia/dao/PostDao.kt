@@ -13,7 +13,7 @@ interface PostDao {
     fun getAll(): Flow<List<PostEntity>>
 
     @Query("SELECT * FROM PostEntity WHERE id = :id")
-    suspend fun getById(id: Long): Flow<PostEntity>
+    fun getById(id: Long): Flow<PostEntity>
 
     @Query("SELECT COUNT(*) == 0 FROM PostEntity")
     suspend fun isEmpty(): Boolean

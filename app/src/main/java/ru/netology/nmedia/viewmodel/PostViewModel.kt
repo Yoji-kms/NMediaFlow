@@ -2,7 +2,7 @@ package ru.netology.nmedia.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.*
-import kotlinx.coroutines.Dispatchers
+import androidx.paging.cachedIn
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -21,7 +21,7 @@ private val empty = Post(
     authorAvatar = "",
     likedByMe = false,
     likes = 0,
-    published = ""
+    published = 0
 )
 
 class PostViewModel(application: Application) : AndroidViewModel(application) {
@@ -30,15 +30,16 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         PostRepositoryImpl(AppDb.getInstance(context = application).postDao())
 
     val data: LiveData<FeedModel> = repository.data
+        .cachedIn(viewModelScope)
         .map(::FeedModel)
-        .asLiveData(Dispatchers.Default)
+        .asLiveData()
 
     private val _dataState = MutableLiveData<FeedModelState>()
     val dataState: LiveData<FeedModelState>
         get() = _dataState
 
     val newerCount: LiveData<Int> = data.switchMap {
-        repository.getNewerCount(it.posts.firstOrNull()?.id ?: 0L)
+        repository.getNewerCount()
             .catch { e -> e.printStackTrace() }
             .asLiveData()
     }
@@ -112,6 +113,15 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         try {
             _dataState.value = FeedModelState()
             repository.removeById(id)
+        } catch (e: Exception) {
+            _dataState.value = FeedModelState(error = true)
+        }
+    }
+
+    fun setAllPostsVisible() = viewModelScope.launch {
+        try {
+            _dataState.value = FeedModelState()
+            repository.setAllPostsVisible()
         } catch (e: Exception) {
             _dataState.value = FeedModelState(error = true)
         }

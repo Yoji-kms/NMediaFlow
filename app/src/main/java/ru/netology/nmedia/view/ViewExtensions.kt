@@ -26,3 +26,9 @@ fun ImageView.loadCircleCrop(
     vararg transforms: BitmapTransformation = emptyArray()
 ) =
     load(url, placeholderId, errorId, CircleCrop(), *transforms)
+
+fun ImageView.loadCircleCropPlaceholder(placeholderId: Int) =
+    Glide.with(this)
+        .load(placeholderId)
+        .circleCrop()
+        .into(this)

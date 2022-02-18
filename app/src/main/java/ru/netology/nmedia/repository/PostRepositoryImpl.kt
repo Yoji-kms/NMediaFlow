@@ -1,14 +1,19 @@
 package ru.netology.nmedia.repository
 
+import android.annotation.SuppressLint
+import android.content.Context
 import androidx.lifecycle.*
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.map
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import ru.netology.nmedia.api.*
+import ru.netology.nmedia.application.App
 import ru.netology.nmedia.dao.PostDao
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.entity.PostEntity
-import ru.netology.nmedia.entity.toDto
 import ru.netology.nmedia.entity.toEntity
 import ru.netology.nmedia.error.ApiError
 import ru.netology.nmedia.error.AppError
@@ -17,11 +22,24 @@ import ru.netology.nmedia.error.UnknownError
 import java.io.IOException
 
 class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
-    override val data = dao.getAll()
-        .map(List<PostEntity>::toDto)
-        .flowOn(Dispatchers.Default)
 
-    override suspend fun getAll() {
+    companion object {
+        @SuppressLint("StaticFieldLeak")
+        val context: Context = App.appContext()
+    }
+
+    private val config = PagingConfig(
+        pageSize = 10,
+        prefetchDistance = 5,
+        enablePlaceholders = true,
+        maxSize = 20
+    )
+
+    override val data = Pager(config = config) { dao.getAll() }
+        .flow.map { it.map(PostEntity::toDto) }
+        .flowOn(Dispatchers.IO)
+
+        override suspend fun getAll() {
         try {
             val response = PostsApi.service.getAll()
             if (!response.isSuccessful) {
@@ -29,7 +47,7 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
             }
 
             val body = response.body() ?: throw ApiError(response.code(), response.message())
-            dao.insert(body.toEntity())
+            dao.insert(body.map { it.copy(visible = true) }.toEntity())
         } catch (e: IOException) {
             throw NetworkError
         } catch (e: Exception) {
@@ -37,21 +55,23 @@ class PostRepositoryImpl(private val dao: PostDao) : PostRepository {
         }
     }
 
-    override fun getNewerCount(id: Long): Flow<Int> = flow {
+    override fun getNewerCount(): Flow<Int> = flow {
         while (true) {
             delay(10_000L)
-            val response = PostsApi.service.getNewer(id)
+            val response = PostsApi.service.getNewer(dao.getLastPostId())
             if (!response.isSuccessful) {
                 throw ApiError(response.code(), response.message())
             }
 
             val body = response.body() ?: throw ApiError(response.code(), response.message())
-            dao.insert(body.toEntity())
-            emit(body.size)
+            dao.insert(body.map { it.copy (visible = false) }.toEntity())
+            emit(dao.countInvisiblePosts())
         }
     }
         .catch { e -> throw AppError.from(e) }
         .flowOn(Dispatchers.Default)
+
+    override suspend fun setAllPostsVisible() = dao.setAllPostsVisible()
 
     override suspend fun save(post: Post) {
         try {

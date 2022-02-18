@@ -12,7 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearSmoothScroller
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.netology.nmedia.R
 import ru.netology.nmedia.adapter.PostsAdapter
@@ -89,20 +89,21 @@ class FeedFragment : Fragment() {
         }
 
         binding.newPostsScrollBtn.setOnClickListener {
+            var flag = true
             lifecycleScope.launch {
                 viewModel.setAllPostsVisible()
-                adapter.loadStateFlow.collectLatest {
+                adapter.onPagesUpdatedFlow.takeWhile { flag }.collectLatest {
                     binding.list.layoutManager?.startSmoothScroll(object :
                         LinearSmoothScroller(context) {
                         override fun getVerticalSnapPreference(): Int {
                             return SNAP_TO_START
                         }
                     }.apply { targetPosition = 0 })
+                    flag = false
                 }
             }
             it.visibility = View.GONE
         }
-
         return binding.root
     }
 }

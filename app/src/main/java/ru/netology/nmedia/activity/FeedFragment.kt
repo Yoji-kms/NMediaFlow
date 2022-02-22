@@ -10,7 +10,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearSmoothScroller
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -19,6 +18,7 @@ import ru.netology.nmedia.adapter.PostsAdapter
 import ru.netology.nmedia.databinding.FragmentFeedBinding
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.listeners.OnInteractionListener
+import ru.netology.nmedia.view.smoothScrollToTop
 import ru.netology.nmedia.viewmodel.PostViewModel
 
 class FeedFragment : Fragment() {
@@ -89,18 +89,10 @@ class FeedFragment : Fragment() {
         }
 
         binding.newPostsScrollBtn.setOnClickListener {
-            var flag = true
             lifecycleScope.launch {
                 viewModel.setAllPostsVisible()
-                adapter.onPagesUpdatedFlow.takeWhile { flag }.collectLatest {
-                    binding.list.layoutManager?.startSmoothScroll(object :
-                        LinearSmoothScroller(context) {
-                        override fun getVerticalSnapPreference(): Int {
-                            return SNAP_TO_START
-                        }
-                    }.apply { targetPosition = 0 })
-                    flag = false
-                }
+                adapter.onPagesUpdatedFlow.firstOrNull()
+                binding.list.smoothScrollToTop()
             }
             it.visibility = View.GONE
         }

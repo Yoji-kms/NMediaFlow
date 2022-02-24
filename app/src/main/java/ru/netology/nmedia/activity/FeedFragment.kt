@@ -8,13 +8,17 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import ru.netology.nmedia.R
 import ru.netology.nmedia.adapter.PostsAdapter
 import ru.netology.nmedia.databinding.FragmentFeedBinding
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.listeners.OnInteractionListener
+import ru.netology.nmedia.view.smoothScrollToTop
 import ru.netology.nmedia.viewmodel.PostViewModel
 
 class FeedFragment : Fragment() {
@@ -53,7 +57,9 @@ class FeedFragment : Fragment() {
                 startActivity(shareIntent)
             }
         })
+
         binding.list.adapter = adapter
+
         viewModel.dataState.observe(viewLifecycleOwner) { state ->
             binding.progress.isVisible = state.loading
             binding.swiperefresh.isRefreshing = state.refreshing
@@ -64,11 +70,13 @@ class FeedFragment : Fragment() {
             }
         }
         viewModel.data.observe(viewLifecycleOwner) { state ->
-            adapter.submitList(state.posts)
+            adapter.submitData(lifecycle, state.posts)
             binding.emptyText.isVisible = state.empty
+
         }
+
         viewModel.newerCount.observe(viewLifecycleOwner) { state ->
-            // TODO: just log it, interaction must be in homework
+            if (state > 0) binding.newPostsScrollBtn.visibility = View.VISIBLE
             println(state)
         }
 
@@ -80,6 +88,14 @@ class FeedFragment : Fragment() {
             findNavController().navigate(R.id.action_feedFragment_to_newPostFragment)
         }
 
+        binding.newPostsScrollBtn.setOnClickListener {
+            lifecycleScope.launch {
+                viewModel.setAllPostsVisible()
+                adapter.onPagesUpdatedFlow.firstOrNull()
+                binding.list.smoothScrollToTop()
+            }
+            it.visibility = View.GONE
+        }
         return binding.root
     }
 }

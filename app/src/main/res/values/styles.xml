@@ -24,4 +24,11 @@
         <item name="android:minHeight">@dimen/icon_button_min_size</item>
     </style>
 
+    <style name="NewerPostsButton">
+        <item name="backgroundTint">@color/newerPostsBtnColor</item>
+        <item name="cornerRadius">@dimen/button_rounding</item>
+        <item name="android:layout_margin">@dimen/button_margin</item>
+        <item name="textAllCaps">false</item>
+    </style>
+
 </resources>

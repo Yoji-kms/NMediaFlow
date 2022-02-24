@@ -1,5 +1,6 @@
 package ru.netology.nmedia.viewholder
 
+import android.annotation.SuppressLint
 import android.view.View
 import android.widget.PopupMenu
 import androidx.recyclerview.widget.RecyclerView
@@ -8,8 +9,12 @@ import ru.netology.nmedia.R
 import ru.netology.nmedia.databinding.CardPostBinding
 import ru.netology.nmedia.dto.Post
 import ru.netology.nmedia.listeners.OnInteractionListener
+import ru.netology.nmedia.repository.PostRepositoryImpl.Companion.context
 import ru.netology.nmedia.view.load
 import ru.netology.nmedia.view.loadCircleCrop
+import ru.netology.nmedia.view.loadCircleCropPlaceholder
+import java.text.SimpleDateFormat
+import java.util.*
 
 class PostViewHolder(
     private val binding: CardPostBinding,
@@ -19,7 +24,7 @@ class PostViewHolder(
     fun bind(post: Post) {
         binding.apply {
             author.text = post.author
-            published.text = post.published
+            published.text = Date(post.published * 1000).toFormattedString()
             content.text = post.content
             val avatarUrl = "${BuildConfig.BASE_URL}/avatars/${post.authorAvatar}"
             avatar.loadCircleCrop(
@@ -74,4 +79,20 @@ class PostViewHolder(
             }
         }
     }
+
+    fun bindPlaceholder(){
+        binding.apply{
+            author.text = "..."
+            published.text = "..."
+            content.text = "..."
+            avatar.loadCircleCropPlaceholder(R.drawable.ic_avatar_placeholder)
+        }
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    private fun Date.toFormattedString() = context.getString(
+        R.string.published_at,
+        SimpleDateFormat("dd MMM yyyy").format(this),
+        SimpleDateFormat("hh:mm:ss").format(this)
+    )
 }
